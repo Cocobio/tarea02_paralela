@@ -150,7 +150,7 @@ int main() {
 
     calcularTileCovarianza<<<blocksPerGrid2, threadsPerBlock2>>>(d_imagenes, d_covarianza, m, n);
 
-    errMemcpy = cudaMemcpy(h_covarianza, d_covarianza, tamaño_cov, cudaMemcpyDeviceToHost);
+    cudaError_t errMemcpy = cudaMemcpy(h_covarianza, d_covarianza, tamaño_cov, cudaMemcpyDeviceToHost);
     if (errMemcpy != cudaSuccess) {
         std::cerr << "Error en cudaMemcpy: " << cudaGetErrorString(errMemcpy) << std::endl;
     }
