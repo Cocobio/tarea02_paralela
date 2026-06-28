@@ -76,7 +76,7 @@ def cuda_naive_test() -> None:
     print(40*'=')
 
 
-def cuda_streams_test() -> None:
+def cuda_streams_test(n_streams: int) -> None:
     """Run the test process.
 
     Modify this function to include the actual test command and any
@@ -87,7 +87,7 @@ def cuda_streams_test() -> None:
     print(40*'=')
     for i in range(10):
         process = subprocess.Popen(
-            f"./bin/cuda_streams.o".split(),
+            f"./bin/cuda_streams.o -NSTREAMS {n_streams}".split(),
             # env=env,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
@@ -164,6 +164,9 @@ def parse_args() -> argparse.Namespace:
         help="Action to perform: 'compile', 'cuda_naive', 'cuda_stream', 'validate' or 'profile'.",
     )
 
+    parser.add_argument("--NSTREAMS", type=int, default=8,
+                        help="Number of streams to spam in CUDA.")
+
     return parser.parse_args()
 
 
@@ -198,13 +201,14 @@ def main() -> None:
     """Main entry point of the script."""
     begin = time()
     args = parse_args()
+    n_streams = args.NSTREAMS
 
     if args.action == "compile":
         cuda_compile()
     elif args.action == "cuda_naive":
         cuda_naive_test()
     elif args.action == "cuda_streams":
-        cuda_streams_test()
+        cuda_streams_test(n_streams)
     elif args.action == "validate":
         validate()
     elif args.action == "profile":

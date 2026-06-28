@@ -4,12 +4,25 @@
 #include "../src/cuda_kernels/experimento2.cu"
 #include <cuda_runtime.h>
 #include <iostream>
+#include <string>
 
 using namespace cimg_library;
 
 
-int main() {
-    const int NSTREAMS = 8;
+int main(int argc, char* argv[]) {
+    int NSTREAMS = 8;
+
+    if (argc == 3) {
+        if (std::string(argv[1]) == "-NSTREAMS") {
+            NSTREAMS = std::stoi(argv[2]);
+        } else {
+            std::cerr << "Error: -NSTREAMS debe ir acompañado por un entero.\n";
+            return 1;
+        }
+    } else if (argc != 1) {
+        std::cerr << "Error: Incompatible el numero de arguments.\n";
+        return 1;
+    }
 
     int crop_size = 128;
     const int m = 100;          // Imágenes
