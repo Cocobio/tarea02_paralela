@@ -23,7 +23,6 @@ Tasks / ToDo
 
 Work in progress
 ---
-- [ ] Primera reunion del *Dream Team*
 - Implementar
     - [ ] Solucion tradicional
         - [ ] Calculo de matriz de covarianzas **Caro**
@@ -36,6 +35,7 @@ Work in progress
 
 Done / Completed
 ---
+- [x] Primera reunion del *Dream Team*
 - Implementar
     -  Solucion tradicional
         - [x] Calculo de vector promedio **Caro**

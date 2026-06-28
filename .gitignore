@@ -5,6 +5,7 @@
 
 # tests
 bin/
+data/
 
 
 Session.vim
