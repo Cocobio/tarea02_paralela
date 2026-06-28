@@ -35,9 +35,9 @@ __global__ void calcularTileCovarianza(double* d_imagenes, double* d_covarianza,
     int j  = blockIdx.y * 16 + ty; // Pixel de la matriz de la izquierda
     int jp = blockIdx.x * 16 + tx; // Pixel de la matriz de la derecha
 
-    int C = (m + 15) / 16; //Cuantos grupos de 16 imagenes hay
+    int C = (m + 15) >> 4; //Cuantos grupos de 16 imagenes hay
 
-    double suma = 0.0f;
+    double suma = 0.0;
 
     for (int c=0; c<C; c++) {
         int kA = c * 16 + threadIdx.x; // Que imagen estamos cargando 
@@ -47,13 +47,13 @@ __global__ void calcularTileCovarianza(double* d_imagenes, double* d_covarianza,
         if(kA < m && j < n){
             sharedA[ty * 16 + tx] = d_imagenes[kA*n + j];
         } else {
-            sharedA[ty * 16 + tx] = 0.0f;
+            sharedA[ty * 16 + tx] = 0.0;
         }
         
         if(kB < m && jp < n){
             sharedB[tx * 16 + ty] = d_imagenes[kB*n + jp];
         }else{
-            sharedB[tx * 16 + ty] = 0.0f;
+            sharedB[tx * 16 + ty] = 0.0;
         }
         
         __syncthreads(); //Espera a que todas las hebras del bloque terminen de cargar a memoria compartida antes de usarla
@@ -66,6 +66,6 @@ __global__ void calcularTileCovarianza(double* d_imagenes, double* d_covarianza,
     }
 
     if (j < n && jp < n) {
-        d_covarianza[j * n + jp] = 1.0f / m * suma;
+        d_covarianza[j * n + jp] = 1.0 / m * suma;
     }
 }

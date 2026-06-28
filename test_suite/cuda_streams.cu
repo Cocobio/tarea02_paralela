@@ -93,6 +93,10 @@ int main(int argc, char* argv[]) {
                                                                                          // chunk%n); // Llamar al kernel, cada thread procesa un pixel de las imagenes
     }
 
+    int threadsPerBlock = 256;
+    int blocksPerGrid = (n + threadsPerBlock - 1) / threadsPerBlock; //Se calculan cuantos bloques se necesitan en funcion de la cantidad de pixeles
+    reducirPromedioParcialKernel<<<blocksPerGrid, threadsPerBlock>>>(d_promedio_parcial, d_promedio, NSTREAMS, n);
+
     // Esperar a que todos los streams terminen
     for (int s = 0; s < NSTREAMS; s++)
         cudaStreamSynchronize(streams[s]);
@@ -108,14 +112,10 @@ int main(int argc, char* argv[]) {
                                                                                             m,
                                                                                             n,
                                                                                             chunk/sizeof(double),
-                                                                                            chunk%n); // Llamar al kernel, cada thread procesa un pixel de las imagenes
+                                                                                            chunk/sizeof(double)%n); // Llamar al kernel, cada thread procesa un pixel de las imagenes
     }
     for (int s = 0; s < NSTREAMS; s++)
         cudaStreamDestroy(streams[s]);
-
-    int threadsPerBlock = 256;
-    int blocksPerGrid = (n + threadsPerBlock - 1) / threadsPerBlock; //Se calculan cuantos bloques se necesitan en funcion de la cantidad de pixeles
-    reducirPromedioParcialKernel<<<blocksPerGrid, threadsPerBlock>>>(d_promedio_parcial, d_promedio, NSTREAMS, n);
 
     // //Liberación de memoria
     cudaFree(d_imagenes);
