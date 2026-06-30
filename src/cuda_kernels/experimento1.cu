@@ -1,20 +1,20 @@
 #include <cuda_runtime.h>
 
 
-__global__ void calcularPromedioKernel(const double* d_imagenes, double* d_promedio, int m, int n) {
+__global__ void calcularPromedioKernel(const float* d_imagenes, float* d_promedio, int m, int n) {
     int j = blockIdx.x * blockDim.x + threadIdx.x;
     if (j < n) {
-        double suma = 0.0;
+        float suma = 0.0;
         for (int k = 0; k < m; ++k) {
             suma += d_imagenes[k * n + j];
         }
         
-        d_promedio[j] = (double)(suma / m);
+        d_promedio[j] = (float)(suma / m);
     }
 }
 
 
-__global__ void calcularImagenesCentradas(double* d_imagenes, double* d_promedio, int m, int n) {
+__global__ void calcularImagenesCentradas(float* d_imagenes, float* d_promedio, int m, int n) {
     int j = blockIdx.x * blockDim.x + threadIdx.x;
     if (j < n) {
         for (int k = 0; k < m; ++k) {
@@ -25,9 +25,9 @@ __global__ void calcularImagenesCentradas(double* d_imagenes, double* d_promedio
 }
 
 
-__global__ void calcularTileCovarianza(double* d_imagenes, double* d_covarianza, int m, int n) {
-    __shared__ double sharedA[256];
-    __shared__ double sharedB[256];
+__global__ void calcularTileCovarianza(float* d_imagenes, float* d_covarianza, int m, int n) {
+    __shared__ float sharedA[256];
+    __shared__ float sharedB[256];
 
     int tx = threadIdx.x; // 0..15
     int ty = threadIdx.y; // 0..15
@@ -37,7 +37,7 @@ __global__ void calcularTileCovarianza(double* d_imagenes, double* d_covarianza,
 
     int C = (m + 15) >> 4; //Cuantos grupos de 16 imagenes hay
 
-    double suma = 0.0;
+    float suma = 0.0;
 
     for (int c=0; c<C; c++) {
         int kA = c * 16 + threadIdx.x; // Que imagen estamos cargando 

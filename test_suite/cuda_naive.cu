@@ -4,6 +4,7 @@
 #include "../src/cuda_kernels/experimento1.cu"
 #include <cuda_runtime.h>
 #include <iostream>
+#include <fstream>
 
 using namespace cimg_library;
 
@@ -13,14 +14,14 @@ int main() {
     const int m = 100;          // Imágenes
     const int N = crop_size;    // Lado
     const int n = N * N;        // Píxeles por imagen
-    const size_t tamaño_total = m * n * sizeof(double);
-    const size_t tamaño_imagen = n * sizeof(double);
-    const size_t tamaño_cov = n * n * sizeof(double);
+    const size_t tamaño_total = m * n * sizeof(float);
+    const size_t tamaño_imagen = n * sizeof(float);
+    const size_t tamaño_cov = n * n * sizeof(float);
 
     // 1. Asignar Memoria Pinned en el Host
-    double* h_imagenes = nullptr;
-    double* h_promedio = nullptr;
-    double* h_covarianza = nullptr;
+    float* h_imagenes = nullptr;
+    float* h_promedio = nullptr;
+    float* h_covarianza = nullptr;
     
     cudaMallocHost((void**)&h_imagenes, tamaño_total);
     cudaMallocHost((void**)&h_promedio, tamaño_imagen);
@@ -42,12 +43,12 @@ int main() {
         CImg<unsigned char> center = gray.get_crop(x0, y0, x1, y1); //Truncar la imagen al tamaño deseado
 
         for (int i = 0; i < n; ++i) {
-            h_imagenes[k * n + i] = (double)center[i]; // Poblar el vector con las imagenes cargadas
+            h_imagenes[k * n + i] = (float)center[i]; // Poblar el vector con las imagenes cargadas
         }
     }
 
     // Reservar memoria en el Device
-    double *d_imagenes, *d_promedio, *d_covarianza; 
+    float *d_imagenes, *d_promedio, *d_covarianza; 
     cudaMalloc(&d_imagenes, tamaño_total);
     cudaMalloc(&d_promedio, tamaño_imagen);
     cudaMalloc(&d_covarianza, tamaño_cov);
@@ -58,10 +59,17 @@ int main() {
     int blocksPerGrid = (n + threadsPerBlock - 1) / threadsPerBlock; //Se calculan cuantos bloques se necesitan en funcion de la cantidad de pixeles
     calcularPromedioKernel<<<blocksPerGrid, threadsPerBlock>>>(d_imagenes, d_promedio, m, n); // Llamar al kernel, cada thread procesa un pixel de las imagenes
 
+
+
+
+
     //cudaDeviceSynchronize(); Creo que esto no es necesario porque los kernels están en el mismo stream   
 
     calcularImagenesCentradas<<<blocksPerGrid, threadsPerBlock>>>(d_imagenes, d_promedio, m, n);
-  
+
+
+    
+
     //cudaDeviceSynchronize(); Creo que esto no es necesario porque los kernels están en el mismo stream   
 
     dim3 threadsPerBlock2(16, 16);
@@ -70,9 +78,8 @@ int main() {
     calcularTileCovarianza<<<blocksPerGrid2, threadsPerBlock2>>>(d_imagenes, d_covarianza, m, n);
 
     cudaError_t errMemcpy = cudaMemcpy(h_covarianza, d_covarianza, tamaño_cov, cudaMemcpyDeviceToHost);
-    if (errMemcpy != cudaSuccess) {
-        std::cerr << "Error en cudaMemcpy: " << cudaGetErrorString(errMemcpy) << std::endl;
-    }
+
+
 
 
     //Liberación de memoria
