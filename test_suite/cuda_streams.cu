@@ -78,14 +78,18 @@ int main(int argc, char* argv[]) {
     for (int s = 0; s < NSTREAMS; s++)
         cudaStreamCreate(&streams[s]);
 
-    int imagenes_por_stream = (m + NSTREAMS - 1) / NSTREAMS;
-
     for (int s = 0; s < NSTREAMS; ++s) {
 
         int threadsPerBlock = 256;
         int blocksPerGrid = (n + threadsPerBlock - 1) / threadsPerBlock; //Se calculan cuantos bloques se necesitan en funcion de la cantidad de pixeles
-        int imagen_inicio = s * imagenes_por_stream;
-        int batch_m = std::min(imagenes_por_stream, m - imagen_inicio);
+        int imagen_inicio = (s * m) / NSTREAMS;
+        int imagen_fin = ((s + 1) * m) / NSTREAMS;
+        int batch_m = imagen_fin - imagen_inicio;
+
+        if (batch_m <= 0) {
+            cudaMemsetAsync(d_promedio_parcial + s*n, 0, tamaño_imagen, streams[s]);
+            continue;
+        }
 
         size_t offset_elementos = imagen_inicio * n;
         size_t batch_bytes = batch_m * n * sizeof(float);
@@ -118,8 +122,11 @@ int main(int argc, char* argv[]) {
 
         int threadsPerBlock = 256;
         int blocksPerGrid = (n + threadsPerBlock - 1) / threadsPerBlock; //Se calculan cuantos bloques se necesitan en funcion de la cantidad de pixeles
-        int imagen_inicio = s * imagenes_por_stream;
-        int batch_m = std::min(imagenes_por_stream, m - imagen_inicio);
+        int imagen_inicio = (s * m) / NSTREAMS;
+        int imagen_fin = ((s + 1) * m) / NSTREAMS;
+        int batch_m = imagen_fin - imagen_inicio;
+
+        if (batch_m <= 0) continue;
 
         size_t offset_elementos = imagen_inicio * n;
 
@@ -143,8 +150,9 @@ int main(int argc, char* argv[]) {
     dim3 blocksPerGridCov((n + 15) / 16, (n + 15) / 16);
 
     for (int s = 0; s < NSTREAMS; ++s) {
-        int imagen_inicio = s * imagenes_por_stream;
-        int batch_m = std::min(imagenes_por_stream, m - imagen_inicio);
+        int imagen_inicio = (s * m) / NSTREAMS;
+        int imagen_fin = ((s + 1) * m) / NSTREAMS;
+        int batch_m = imagen_fin - imagen_inicio;
 
         if (batch_m <= 0) continue;
 
@@ -168,10 +176,8 @@ int main(int argc, char* argv[]) {
         cudaStreamSynchronize(streams[s]);
 
 
-    // Transferencia D->H asincrona
-    cudaMemcpy(h_covarianza, d_covarianza, n * n * sizeof(float), cudaMemcpyDeviceToHost);
-
-     cudaError_t errMemcpy = cudaMemcpy(h_covarianza, d_covarianza, tamaño_cov, cudaMemcpyDeviceToHost);
+    // Transferencia D->H sincrona
+    cudaError_t errMemcpy = cudaMemcpy(h_covarianza, d_covarianza, tamaño_cov, cudaMemcpyDeviceToHost);
     if (errMemcpy != cudaSuccess) {
         std::cerr << "Error en cudaMemcpy: " << cudaGetErrorString(errMemcpy) << std::endl;
     }
